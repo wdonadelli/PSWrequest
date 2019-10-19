@@ -1,2 +1,2 @@
 # PSWrequest
-PHP/SQLite interaction system Via web request
+PHP/SQLite interaction system via Web request
