@@ -1,4 +1,4 @@
-# PHP/SQLite Interaction System Via Web Request - PSWrequest
+# PHP/SQLite Interaction System Via Web Request
 
 The PHP/SQLite Interaction System Via Web Request - PSWrequest is a class written in [PHP](https://www.php.net/) intended to interact with the [SQLite](https://www.sqlite.org/) database.
 
