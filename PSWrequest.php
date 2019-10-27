@@ -2,49 +2,47 @@
 /*-- configuração --*/
 //phpinfo();
 setlocale (LC_ALL, "pt_BR");
-ini_set('display_errors', True);
+ini_set('display_errors', False);
 
 class PSWrequest extends SQLite3 {
 
 	/*------------------------------ PRIVADO ---------------------------------*/
 
-	/*-- Método privado para obter o argumento WHERE --*/
-	private function getWhere($where, $and = True) {
-		$whr = [];
-		foreach($where as $key => $value) {
-			array_push($whr, "{$key} = '{$value}'");
-		}
-		$whr = join(($and == True ? " AND " : " OR "), $whr);
-		return $whr;
-	}
+	private $VERSION = "v1.0.0";
 
-	/*-- Atributos privados para guardar informação sobre a requisição --*/
+	/*-- Atributos para guardar informação sobre a requisição --*/
 	private $ERROR;
 	private $TYPE;
 	private $MESSAGE;
-	private $SQL;
+	private $DATA;
 
-	/*-- Método privado para definir os atributos da requisição --*/
-	private function setRequest($error = False, $type = "", $message = "", $sql = NULL) {
+	/*-- Método para definir os atributos da requisição --*/
+	private function setRequest($error = False, $type = "php", $message = "", $data = NULL) {
 		$this->ERROR   = $error;
 		$this->TYPE    = $type;
 		$this->MESSAGE = $message;
-		$this->SQL     = $sql;
+		$this->DATA    = $data;
 		return True;
 	}
 
 	/*------------------------------ PÚBLICO ---------------------------------*/
 
+	/*-- Método mágico que retornará a versão da classe --*/
+	public function __toString() {
+		return $this->VERSION;
+	}
+
 	/*-- Método que imprime em JSON o resultado da última requisição --*/
-	public function getRequest() {
+	public function getResponse() {
 		$request = Array(
 			"error"   => $this->ERROR,
-			"type"    => $this->TYPE,
-			"message" => $this->MESSAGE,
-			"sql"     => $this->SQL
+			"message" => $this->TYPE === "php" ? "There was an error communicating with the database." : $this->MESSAGE,
+			"data"    => $this->DATA
 		);
 		echo json_encode($request);
-		exit(0);
+		$this->close();
+		$value = $this->ERROR ? 1 : 0;
+		exit($value);
 	}
 
 	/*-- Método que retorna se houve erro na última requisição --*/
@@ -63,14 +61,16 @@ class PSWrequest extends SQLite3 {
 	}
 	
 	/*-- Método que retorna a informação de SQL da última requisição --*/
-	public function getSQL() {
-		return $this->SQL;
+	public function getData() {
+		return $this->DATA;
 	}
 
 	/*-- Método que imprime em JSON a informação de SQL da última requisição --*/
 	public function getQuery() {
-		echo json_encode($this->SQL);
-		exit(0);
+		echo json_encode($this->DATA);
+		$this->close();
+		$value = $this->ERROR ? 1 : 0;
+		exit($value);
 	}
 
 	/*-- Método construtor que define o banco de dados --*/
@@ -80,8 +80,7 @@ class PSWrequest extends SQLite3 {
 			$this->open($db);
 		} catch (Exception $e) {
 			$this->setRequest(True, "php", $e->getMessage());
-			$this->showRequest();
-			exit(1);
+			$this->getResponse();
 		}
 		return;
 	}
@@ -92,30 +91,26 @@ class PSWrequest extends SQLite3 {
 		$this->setRequest();
 		try {
 			if (gettype($input) !== "string") {
-				throw new Exception("PSWrequest::sql - Invalid argument.");
+				throw new Exception("PSWrequest::sql - Invalid \"input\" argument.");
 			}
 			$input   = trim($input);
-			$query = preg_match('/^SELECT/i', $input) ? True : False;
-			$exec  = $query ? $this->query($input) : $this->exec($input);
-			if (!$query || $this->lastErrorCode() !== 0) {
-				$error   = $this->lastErrorCode() !== 0 ? True : False;
-				$message = $this->lastErrorMsg();
-				$sql     = NULL;
-				if (!$error && preg_match('/^INSERT/i', $input)) {
-					$sql = Array("lastID" => $this->lastInsertRowID());
-				}
-				$this->setRequest($error, "sql", $message, $sql);
+			$query   = preg_match('/^SELECT/i', $input) ? True : False;
+			$exec    = $query ? $this->query($input) : $this->exec($input);
+			$error   = $this->lastErrorCode() !== 0 ? True :  False;
+			$message = $this->lastErrorMsg();
+			if (!$query) {
+				$data = !$error && preg_match('/^INSERT/i', $input) ? $this->lastInsertRowID() : NULL;
 			} else {
-				$sql = Array();
+				$data = Array();
 				while ($array = $exec->fetchArray()) {
 					$item = Array();
 					foreach ($array as $key => $value) {
 						$item[$key] = $value;
 					}
-					array_push($sql, $item);
+					array_push($data, $item);
 				}
-				$this->setRequest(False, "sql", "", $sql);
 			}
+			$this->setRequest($error, "sql", $message, $data);
 		} catch (Exception $e) {
 			$this->setRequest(True, "php", $e->getMessage());
 			return False;
@@ -128,10 +123,10 @@ class PSWrequest extends SQLite3 {
 		$this->setRequest();
 		try {
 			if (gettype($table) !== "string" || strlen(trim($table)) === 0) {
-				throw new Exception("PSWrequest::insert - Invalid table argument.");
+				throw new Exception("PSWrequest::insert - Invalid \"table\" argument.");
 			}
 			if (gettype($data) !== "array" || count($data) === 0) {
-				throw new Exception("PSWrequest::insert - Invalid data argument.");
+				throw new Exception("PSWrequest::insert - Invalid \"data\" argument.");
 			}
 			$table = trim($table);
 			$col = [];
@@ -151,25 +146,27 @@ class PSWrequest extends SQLite3 {
 	}
 
 	/*-- Método que atualiza dados da tabela a partir de um array --*/
-	public function update($table = NULL, $data = NULL, $where = NULL, $and = True) {
+	public function update($table = NULL, $data = NULL, $where = NULL) {
 		$this->setRequest();
 		try {
 			if (gettype($table) !== "string" || strlen(trim($table)) === 0) {
-				throw new Exception("PSWrequest::update - Invalid table argument.");
+				throw new Exception("PSWrequest::update - Invalid \"table\" argument.");
 			}
 			if (gettype($data) !== "array" || count($data) === 0) {
-				throw new Exception("PSWrequest::update - Invalid data argument.");
+				throw new Exception("PSWrequest::update - Invalid \"data\" argument.");
 			}
-			if (gettype($where) !== "array" || count($data) === 0) {
-				throw new Exception("PSWrequest::update - Invalid where argument.");
+			if (gettype($where) !== "string" || !array_key_exists(trim($where), $data)) {
+				throw new Exception("PSWrequest::update - Invalid \"where\" argument.");
 			}
 			$table = trim($table);
-			$set = [];
+			$where = trim($where);
+			$whr   = "{$where} = '{$data[$where]}'";
+			$set   = [];
+			unset($data[$where]);
 			foreach($data as $key => $value) {
 				array_push($set, "{$key} = '{$value}'");
 			}
 			$set = join(", ", $set);
-			$whr = $this->getWhere($where, $and);
 			$sql = "UPDATE {$table} SET {$set} WHERE {$whr};";
 			return $this->sql($sql);
 		} catch (Exception $e) {
@@ -179,16 +176,21 @@ class PSWrequest extends SQLite3 {
 	}
 
 	/*-- Método que exclui dados da tabela a partir de um array --*/
-	public function delete($table = NULL, $where = NULL, $and = True) {
+	public function delete($table = NULL, $data = NULL, $where = NULL) {
 		$this->setRequest();
 		try {
 			if (gettype($table) !== "string" || strlen(trim($table)) === 0) {
-				throw new Exception("PSWrequest::delete - Invalid table argument.");
+				throw new Exception("PSWrequest::delete - Invalid \"table\" argument.");
 			}
-			if (gettype($where) !== "array" || count($data) === 0) {
-				throw new Exception("PSWrequest::delete - Invalid where argument.");
+			if (gettype($data) !== "array" || count($data) === 0) {
+				throw new Exception("PSWrequest::delete - Invalid \"data\" argument.");
 			}
-			$whr = $this->getWhere($where, $and);
+			if (gettype($where) !== "string" || !array_key_exists(trim($where), $data)) {
+				throw new Exception("PSWrequest::delete - Invalid \"where\" argument.");
+			}
+			$table = trim($table);
+			$where = trim($where);
+			$whr   = "{$where} = '{$data[$where]}'";
 			$sql = "DELETE FROM {$table} WHERE {$whr};";
 			return $this->sql($sql);
 		} catch (Exception $e) {
@@ -198,19 +200,24 @@ class PSWrequest extends SQLite3 {
 	}
 
 	/*-- Método que returna todos os itens da pesquisa --*/
-	public function view($table, $where = Array(), $and = True) {
+	public function view($table, $data = Array(), $where = NULL) {
 		$this->setRequest();
 		try {
 			if (gettype($table) !== "string" || strlen(trim($table)) === 0) {
-				throw new Exception("PSWrequest::view - Invalid table argument.");
+				throw new Exception("PSWrequest::view - Invalid \"table\" argument.");
 			}
-			if (gettype($where) !== "array") {
-				throw new Exception("PSWrequest::view - Invalid where argument.");
+			if (gettype($data) !== "array") {
+				throw new Exception("PSWrequest::view - Invalid \"data\" argument.");
 			}
-			if (count($where) === 0) {
+			if ($where !== NULL && !array_key_exists(trim($where), $data)) {
+				throw new Exception("PSWrequest::view - Invalid \"where\" argument.");
+			}
+			$table = trim($table);
+			$where = gettype($where) === "string" ? trim($where) : $where;
+			if (count($data) === 0 || $where === NULL) {
 				$sql = "SELECT * FROM {$table};";
 			} else {
-				$whr = $this->getWhere($where, $and);
+				$whr   = "{$where} = '{$data[$where]}'";
 				$sql = "SELECT * FROM {$table} WHERE {$whr};";
 			}
 			return $this->sql($sql);
@@ -221,13 +228,7 @@ class PSWrequest extends SQLite3 {
 	}
 }
 $a = new PSWrequest();
-$a->sql("CREATE TABLE IF NOT EXISTS loko (col1 TEXT, col2 NUMBER)");
-$a->sql("INSERT INTO loko (col1, col2) VALUES ('willian', 36)");
-$a->sql("INSERT INTO loko (col1, col2) VALUES ('helen', 36)");
-$a->insert("loko", Array("col1" => "helena", "col2" => 2));
-//$a->sql("UPDATE loko SET col1 = 'asdasds' WHERE col1 = 'willian'");
-//$a->sql("SELECT * FROM loko");
-//$a->getQuery();
-$a->view("loko", Array("col1" => "willian", "col1" => "helena"), False);
-$a->getQuery();
+echo $a;
+
+
 ?>
