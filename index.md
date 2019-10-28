@@ -178,7 +178,7 @@ $myData = Array(
 	"age"    => 18,
 	"height" => 1.7
 );
-$object->insert("myTable", $myData, "id");
+$object->view("myTable", $myData, "id");
 ```
 
 The above action would have the same result as the procedure below:
@@ -187,7 +187,7 @@ The above action would have the same result as the procedure below:
 $object->sql("SELECT * FROM myTable WHERE id = '1'");
 ```
 
-The search will return all columns from the table (`*`). If you need a more complex action, use the `sql` method.
+The search will return all columns from the table (`*`). If you need a more complex action, use the `sql` method or or create direct queries (VIEW) in the database.
 
 ## Version
 
