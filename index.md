@@ -2,13 +2,13 @@
 
 The PHP/SQLite Interaction System Via Web Request - PSWrequest is a class written in [PHP](https://www.php.net/) intended to interact with the [SQLite](https://www.sqlite.org/) database.
 
-This class inherits the structure of the default [SQLite3](https://www.php.net/manual/pt_BR/book.sqlite3.php) library, so the library must be enabled for this tool to work.
+This class inherits the structure of the default [SQLite3 library](https://www.php.net/manual/pt_BR/book.sqlite3.php), so the library must be enabled for this tool to work.
 
 The class differential is to provide simplified mechanisms of communication (requests and responses) between the database and the requestor.
 
 ## Constructor
 
-When creating the object, the database name must be entered as an argument, otherwise a database will be defined in memory ([:memory:"](https://www.sqlite.org/inmemorydb.html)).
+When creating the object, the database name must be entered as an argument, otherwise a database will be [defined in memory](https://www.sqlite.org/inmemorydb.html) (`:memory:`).
 
 ```php
 $object = new PSWrequest("database");
@@ -23,14 +23,6 @@ The class was built with the intention of silencing errors, avoiding harming the
 To know if a certain action was satisfactory, methods were created that provide the status of the last interaction with the object.
 
 These methods are not a source of interactions.
-
-### `getError`
-
-This method returns `True` if the last interaction did not occur satisfactorily, otherwise it returns `False`.
-
-```php
-$object->getError();
-```
 
 ### `getError`
 
@@ -131,7 +123,7 @@ If you need a more complex action, use the `sql` method.
 
 This method is a shortcut and its operation is similar to the `insert` method, however it aims to update information in the database.
 
-The method has one more argument than the `insert` method, the `$where`. This method should indicate which key within the `$data` argument will be used to set the update target.
+he method has one more argument than the `insert` method, the` $where` argument. This argument should indicate which key within the `$data` argument will be used to set the update target.
 
 ```php
 $myData = Array(
@@ -153,7 +145,7 @@ Only one key can be set and the comparison will use the `=` sign. If you need a 
 
 ### `delete($table, $data, $where)`
 
-This method is a shortcut and works similar to the `update` method.
+This method is a shortcut and its operation is similar to the `update` method, however it aims to delete information in the database.
 
 ```php
 $myData = Array(
@@ -199,10 +191,8 @@ The search will return all columns from the table (`*`). If you need a more comp
 
 ## Version
 
-- _v1.0.0 (2019-10-30)_
+- _v1.0.0 (2019-10-28)_
 
 ## Author
 
 - Willian Donadelli ([wdonadelli@gmail.com](wdonadelli@gmail.com))
-
-

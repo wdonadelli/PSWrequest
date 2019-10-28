@@ -15,6 +15,7 @@ class PSWrequest extends SQLite3 {
 	private $TYPE;
 	private $MESSAGE;
 	private $DATA;
+	private $COMMAND = "";
 
 	/*-- Método para definir os atributos da requisição --*/
 	private function setRequest($error = False, $type = "php", $message = "", $data = NULL) {
@@ -29,7 +30,15 @@ class PSWrequest extends SQLite3 {
 
 	/*-- Método mágico que retornará a versão da classe --*/
 	public function __toString() {
-		return $this->VERSION;
+		return $this->COMMAND;
+	}
+	
+	/*-- Método mágico para var_dump --*/
+	public function __debugInfo() {
+		return Array(
+			"COMMAND" => $this->COMMAND,
+			"VERSION" => $this->VERSION
+		);
 	}
 
 	/*-- Método que imprime em JSON o resultado da última requisição --*/
@@ -87,7 +96,7 @@ class PSWrequest extends SQLite3 {
 
 	/*-- Método que define o que fazer a partir de um comando sql --*/
 	public function sql($input) {
-		/*echo $input."<br>";*/
+		$this->COMMAND = $input;
 		$this->setRequest();
 		try {
 			if (gettype($input) !== "string") {
@@ -227,8 +236,4 @@ class PSWrequest extends SQLite3 {
 		}
 	}
 }
-$a = new PSWrequest();
-echo $a;
-
-
 ?>
