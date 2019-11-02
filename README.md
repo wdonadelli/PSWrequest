@@ -6,7 +6,7 @@ This class inherits the structure of the default [SQLite3 library](https://www.p
 
 The class differential is to provide simplified mechanisms of communication (requests and responses) between the database and the requestor.
 
-## links
+## Links
 
 - [Click here](https://wdonadelli.github.io/PSWrequest/) to view the handbook.
 - [Click here](https://wdonadelli.github.io/PSWrequest/PSWrequest.php) to download the updated file.
