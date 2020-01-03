@@ -11,4 +11,8 @@ The class differential is to provide simplified mechanisms of communication (req
 - [Click here](https://wdonadelli.github.io/PSWrequest/) to view the handbook.
 - [Click here](https://wdonadelli.github.io/PSWrequest/PSWrequest.php) to download the updated file.
 
-_Willian Donadelli_ ([wdonadelli@gmail.com](wdonadelli@gmail.com))
+## Example
+
+See the running project through the example available at [WebExample1](https://github.com/wdonadelli/WebExample1).
+
+_Willian Donadelli_ (<wdonadelli@gmail.com>)
